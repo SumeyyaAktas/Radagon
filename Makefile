@@ -73,7 +73,10 @@ $(KERNEL_BIN): $(KERNEL_ELF) | $(BUILD_DIR)
 	$(OBJCOPY) -O binary --strip-all $< $@
 
 $(DISK_IMG): $(MBR_BIN) $(STAGE2_BIN) $(KERNEL_BIN) | $(IMAGE_DIR)
-	@cat $(MBR_BIN) $(STAGE2_BIN) $(KERNEL_BIN) > $@
+	@dd if=/dev/zero of=$@ bs=512 count=20480 2>/dev/null
+	@dd if=$(MBR_BIN) of=$@ bs=512 count=1 conv=notrunc 2>/dev/null
+	@dd if=$(STAGE2_BIN) of=$@ bs=512 seek=1 conv=notrunc 2>/dev/null
+	@dd if=$(KERNEL_BIN) of=$@ bs=512 seek=33 conv=notrunc 2>/dev/null
 
 run: $(DISK_IMG)
 	$(QEMU) -m 512M -drive format=raw,file=$(DISK_IMG),if=ide -serial stdio -no-reboot -cpu max
