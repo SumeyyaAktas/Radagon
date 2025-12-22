@@ -22,16 +22,7 @@ start_stage2:
     mov bx, loading_kernel_str
     call print16_string
     call print16_newline
-
-    mov cx, 3                                     
-                       
-.load_retry:
-    push cx                    
-
-    mov ah, 0x00
-    mov dl, [boot_drive]
-    int 0x13
-
+    
     mov ax, KERNEL_SEGMENT
     mov es, ax
     mov bx, KERNEL_OFFSET
@@ -39,20 +30,13 @@ start_stage2:
     mov ah, 0x02               
     mov al, KERNEL_SECTORS     
     mov ch, 0                  
-    mov cl, 32               
+    mov cl, 34                 
     mov dh, 0                  
     mov dl, [boot_drive]
     int 0x13
     
-    pop cx                
-    jnc .load_success         
+    jc .disk_error
 
-    mov bx, retry_str
-    call print16_string
-    loop .load_retry      
-    jmp .disk_error
-
-.load_success:
     mov ax, [KERNEL_OFFSET]
     cmp ax, 0
     je .disk_error
