@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "include/vga.h"
+#include "vga.h"
 
 uint8_t vga_attr;
 int vga_row;
