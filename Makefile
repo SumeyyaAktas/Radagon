@@ -40,7 +40,12 @@ CFLAGS := -m64 \
           -Wall \
           -Wextra \
           -I$(KERNEL_SRC_DIR) \
-		  -Ikernel/include
+		  -Ikernel/include \
+		  -mcmodel=large \
+		  -mno-red-zone \
+		  -mno-mmx \
+		  -mno-sse \
+		  -mno-sse2
 
 LDFLAGS := -T linker.ld \
            -nostdlib \
@@ -77,11 +82,15 @@ $(KERNEL_BIN): $(KERNEL_ELF) | $(BUILD_DIR)
 $(DISK_IMG): $(MBR_BIN) $(STAGE2_BIN) $(KERNEL_BIN) | $(IMAGE_DIR)
 	@cat $(MBR_BIN) $(STAGE2_BIN) $(KERNEL_BIN) > $@
 
-# Run in QEMU
+# Run in QEMU with CPU feature display
 run: $(DISK_IMG)
-	$(QEMU) -m 512M -drive format=raw,file=$(DISK_IMG),if=ide -serial stdio -no-reboot
+	$(QEMU) -m 512M -drive format=raw,file=$(DISK_IMG),if=ide -serial stdio -no-reboot -cpu max
+
+# Debug version with more verbose output
+debug: $(DISK_IMG)
+	$(QEMU) -m 512M -drive format=raw,file=$(DISK_IMG),if=ide -serial stdio -no-reboot -cpu max -d int,cpu_reset
 
 clean:
 	@rm -rf $(BUILD_DIR) $(IMAGE_DIR)
 
-.PHONY: all clean run
+.PHONY: all clean run debug

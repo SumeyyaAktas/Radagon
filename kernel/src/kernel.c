@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include "include/ports.h"
 #include <stdbool.h>
+#include "include/vga.h"
 
 #define COM1 0x3F8
 
@@ -23,6 +24,7 @@ bool serial_init(void)
     outb(COM1 + 4, 0x0B);
 
     serial_initialized = true;
+    return true;  // Fixed: added return statement
 }
 
 void serial_write_char(char c) 
@@ -46,7 +48,9 @@ void serial_print(const char* str)
 
 __attribute__((noreturn))
 void _start(void) {
+    vga_init();
     serial_init();
     serial_print("64-bit kernel running!\n");
+    vga_print("64-bit kernel running!");
     for (;;) __asm__("hlt");
 }

@@ -1,0 +1,46 @@
+#include <stdint.h>
+#include "include/vga.h"
+
+uint8_t vga_attr;
+int vga_row;
+int vga_col;
+
+void vga_init(void) 
+{
+    vga_row = 0;
+    vga_col = 0;
+    vga_attr = VGA_COLOR(WHITE, BLACK);
+}
+
+void vga_print(const char* str) 
+{
+    char* video = (char*)VIDEO_MEMORY;
+
+    while (*str) 
+    {
+        if (*str == '\n') 
+        {
+            vga_col = 0;
+            vga_row++;
+            str++;
+            continue;
+        }
+
+        if (vga_col >= 80) 
+        {
+            vga_col = 0;
+            vga_row++;
+        }
+
+        if (vga_row >= 25) 
+        {
+            vga_row = 0; 
+        }
+
+        video[(vga_row * 80 + vga_col) * 2] = *str;
+        video[(vga_row * 80 + vga_col) * 2 + 1] = vga_attr;
+
+        vga_col++;
+        str++;
+    }
+}
