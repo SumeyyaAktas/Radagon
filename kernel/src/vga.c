@@ -44,3 +44,18 @@ void vga_print(const char* str)
         str++;
     }
 }
+
+void vga_print_hex(uint32_t value) 
+{
+    static const char hex[] = "0123456789ABCDEF";
+    char buf[9];
+    buf[8] = '\0';
+    
+    for (int i = 7; i >= 0; i--) 
+    {
+        buf[i] = hex[value & 0xF];
+        value >>= 4;
+    }
+    
+    vga_print(buf);
+}
