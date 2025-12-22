@@ -1,7 +1,7 @@
 %define load_address 0x7C00            
 %define relocate_address 0x0600
 %define stage2_address 0x7E00
-%define stage2_sectors 16  ; ← FIXED: Changed from 8 to 16 for 64-bit stage2
+%define stage2_sectors 32  
 %define sector_size 512
 %define offset_reloc (relocate_address - load_address) 
 

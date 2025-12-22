@@ -3,7 +3,7 @@
 
 %define KERNEL_OFFSET 0x1000
 %define KERNEL_SEGMENT 0x0000
-%define KERNEL_SECTORS 16 
+%define KERNEL_SECTORS 32 
 %define VGA_THIRD_LINE_OFFSET 480          
 
 start_stage2:
@@ -39,7 +39,7 @@ start_stage2:
     mov ah, 0x02               
     mov al, KERNEL_SECTORS     
     mov ch, 0                  
-    mov cl, 18                
+    mov cl, 32               
     mov dh, 0                  
     mov dl, [boot_drive]
     int 0x13
