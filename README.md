@@ -5,8 +5,8 @@
 <p>
   
   ### AHCI Storage Driver
-[![AHCI](https://img.shields.io/badge/SATA-AHCI-9d0208?style=flat-square)]()
-[![License](https://img.shields.io/badge/License-Apache_2.0-9d0208?style=flat-square)]()
+[![AHCI](https://img.shields.io/badge/SATA-AHCI-ffd000?style=flat-square)]()
+[![License](https://img.shields.io/badge/License-Apache_2.0-ffd000?style=flat-square)]()
 
 </p>
 
