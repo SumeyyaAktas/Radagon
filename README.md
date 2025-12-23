@@ -12,7 +12,7 @@
 
 </div>
 
-Radagon is a Serial ATA Advanced Host Controller Interface (AHCI) driver written in C for x86-64 operating systems. This project implements the core logic required to communicate with modern SATA storage devices through Memory-Mapped I/O (MMIO) and Direct Memory Access (DMA).
+Radagon is a Serial ATA Advanced Host Controller Interface (AHCI) driver written in C for x86-64 operating systems. This project communicates with modern SATA storage devices through Memory-Mapped I/O (MMIO) and Direct Memory Access (DMA).
 
 ## Resources
 
