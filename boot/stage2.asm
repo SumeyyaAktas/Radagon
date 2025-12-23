@@ -150,26 +150,30 @@ begin_pm:
 
 setup_page_tables:
     mov edi, pml4_table
-    mov ecx, 4096 * 3 / 4  
+    mov ecx, (4096 * 3) / 4
     xor eax, eax
-    cld
     rep stosd
 
-    mov edi, pml4_table
     mov eax, pdp_table
-    or eax, 0b11  
-    mov [edi], eax
+    or eax, 0b11
+    mov [pml4_table], eax
 
-    mov edi, pdp_table
     mov eax, pd_table
     or eax, 0b11
-    mov [edi], eax
+    mov [pdp_table], eax
 
+    mov ecx, 512            
     mov edi, pd_table
-    mov eax, 0x0
-    or eax, 0b10000011  
-    mov [edi], eax
-    
+    xor eax, eax            
+
+.map_loop:
+    mov ebx, eax
+    or ebx, 0b10000011      
+    mov [edi], ebx
+    add eax, 0x200000       
+    add edi, 8              
+    loop .map_loop
+
     ret
 
 [bits 64]
