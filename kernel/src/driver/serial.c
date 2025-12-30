@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <stdint.h>
-#include "driver/serial.h"
 #include "ports.h"
+#include "driver/serial.h"
 
 static inline bool is_transmit_empty()
 {
