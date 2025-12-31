@@ -1,4 +1,6 @@
 <div align="center">
+
+<img src="assets/Radagon-image.jpg" width="100" height="100"/>
   
 # Radagon
 
