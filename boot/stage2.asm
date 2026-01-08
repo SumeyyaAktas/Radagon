@@ -13,6 +13,9 @@ start_stage2:
     call print16_string
     call print16_newline
 
+    ; Long mode requires specific CPU features (LM-bit). 
+    ; We must check CPID/extended features before attempting the jump 
+    ; to avoid an unpredictable crash on older hardware.
     call check_long_mode
     cmp ax, 0
     je .no_long_mode
@@ -23,6 +26,9 @@ start_stage2:
     call print16_string
     call print16_newline
     
+    ; Loading the 64-bit kernel
+    ; We use BIOS int 0x13 which is slow but reliable for 
+    ; fetching the initial kernel payload before we lose BIOS access.
     mov ax, KERNEL_SEGMENT
     mov es, ax
     mov bx, KERNEL_OFFSET
@@ -30,7 +36,7 @@ start_stage2:
     mov ah, 0x02               
     mov al, KERNEL_SECTORS     
     mov ch, 0                  
-    mov cl, 34                 
+    mov cl, 34                    ; Starting sector (skipping bootloader)
     mov dh, 0                  
     mov dl, [boot_drive]
     int 0x13
@@ -148,12 +154,19 @@ begin_pm:
 
     jmp CODE64_SEG:long_mode_start
 
+; 64-bit mode cannot exist without paging. We create a simple 
+; identity map where virtual address == physical address.
 setup_page_tables:
+    ; Page tables must be 4KB aligned.
+    ; We clear the memory first to ensure no stale present bits 
+    ; cause a page fault.
     mov edi, pml4_table
     mov ecx, (4096 * 3) / 4
     xor eax, eax
     rep stosd
 
+    ; PML4 -> PDPT -> PD
+    ; Bit 0 (Present) | Bit 1 (Read/Write)
     mov eax, pdp_table
     or eax, 0b11
     mov [pml4_table], eax
@@ -162,16 +175,19 @@ setup_page_tables:
     or eax, 0b11
     mov [pdp_table], eax
 
+    ; We use 2MB huge pages to simplify the table structure. 
+    ; This maps the first 1GB of RAM, covering our kernel and AHCI buffers.
     mov ecx, 512            
     mov edi, pd_table
     xor eax, eax            
 
 .map_loop:
     mov ebx, eax
-    or ebx, 0b10000011      
+    ; Bit 7 (Huge Page) | Bit 1 (R/W) | Bit 0 (Present)
+    or ebx, 0B10000011      
     mov [edi], ebx
-    add eax, 0x200000       
-    add edi, 8              
+    add eax, 0x200000             ; Increment by 2MB  
+    add edi, 8                    ; Next 64-bit entry
     loop .map_loop
 
     ret
@@ -179,6 +195,8 @@ setup_page_tables:
 [bits 64]
 
 long_mode_start:
+    ; Segment registers (DS, ES, SS) should be 
+    ; loaded with a 64-bit data selector, even though bases are ignored.
     mov ax, DATA64_SEG
     mov ds, ax
     mov es, ax
@@ -186,9 +204,11 @@ long_mode_start:
     mov gs, ax
     mov ss, ax
 
+    ; Setup a 64-bit stack
     mov rbp, 0x90000
     mov rsp, rbp
 
+    ; Final jump into the 64-bit C kernel
     mov rax, KERNEL_OFFSET
     jmp rax
 
@@ -211,14 +231,10 @@ no_long_mode_str: db 'Error: CPU does not support 64-bit long mode', 0
 boot_drive: db 0
 cursor_pos: dd 0       
 
+; Memory reserved for page tables (must be 4KB aligned)
 align 4096
-pml4_table:
-    times 4096 db 0
-    
-pdp_table:
-    times 4096 db 0
-    
-pd_table:
-    times 4096 db 0
+pml4_table: times 4096 db 0   
+pdp_table: times 4096 db 0   
+pd_table: times 4096 db 0
 
 times 16384 - ($ - $$) db 0
