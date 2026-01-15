@@ -44,6 +44,10 @@ CFLAGS := -m64 \
 
 LDFLAGS := -T linker.ld -nostdlib -static
 
+SATA1_IMG := $(IMAGE_DIR)/sata1.img
+SATA2_IMG := $(IMAGE_DIR)/sata2.img
+CDROM_ISO := $(IMAGE_DIR)/cdrom.iso
+
 all: $(DISK_IMG) $(SATA_IMG)
 
 $(BUILD_DIR) $(IMAGE_DIR):
@@ -78,12 +82,77 @@ $(DISK_IMG): $(MBR_BIN) $(STAGE2_BIN) $(KERNEL_BIN) | $(IMAGE_DIR)
 $(SATA_IMG): | $(IMAGE_DIR)
 	dd if=/dev/zero of=$@ bs=1M count=64 2>/dev/null
 
+$(SATA1_IMG): | $(IMAGE_DIR)
+	dd if=/dev/zero of=$@ bs=1M count=128 2>/dev/null
+
+$(SATA2_IMG): | $(IMAGE_DIR)
+	dd if=/dev/zero of=$@ bs=1M count=256 2>/dev/null
+
+$(CDROM_ISO): | $(IMAGE_DIR)
+	mkdir -p /tmp/cdrom_content
+	mkisofs -o $@ -V "TEST_CD" -J -R /tmp/cdrom_content 2>/dev/null || \
+		genisoimage -o $@ -V "TEST_CD" -J -R /tmp/cdrom_content 2>/dev/null || \
+		dd if=/dev/zero of=$@ bs=1M count=10 2>/dev/null
+	rm -rf /tmp/cdrom_content
+
 run: $(DISK_IMG) $(SATA_IMG)
 	$(QEMU) -m 512M \
 		-drive id=boot,format=raw,file=$(DISK_IMG),if=ide \
 		-drive id=sata0,format=raw,file=$(SATA_IMG),if=none \
 		-device ich9-ahci,id=ahci \
 		-device ide-hd,drive=sata0,bus=ahci.0 \
+		-serial stdio -no-reboot -cpu max
+
+run-wd: $(DISK_IMG) $(SATA_IMG)
+	$(QEMU) -m 512M \
+		-drive id=boot,format=raw,file=$(DISK_IMG),if=ide \
+		-drive id=sata0,format=raw,file=$(SATA_IMG),if=none \
+		-device ich9-ahci,id=ahci \
+		-device ide-hd,drive=sata0,bus=ahci.0,model="WDC WD5000AAKX",serial=WD-WCAYUN123456 \
+		-serial stdio -no-reboot -cpu max
+
+run-seagate: $(DISK_IMG) $(SATA_IMG)
+	$(QEMU) -m 512M \
+		-drive id=boot,format=raw,file=$(DISK_IMG),if=ide \
+		-drive id=sata0,format=raw,file=$(SATA_IMG),if=none \
+		-device ich9-ahci,id=ahci \
+		-device ide-hd,drive=sata0,bus=ahci.0,model="ST1000DM003",serial=S1D0ABCD \
+		-serial stdio -no-reboot -cpu max
+
+run-samsung: $(DISK_IMG) $(SATA_IMG)
+	$(QEMU) -m 512M \
+		-drive id=boot,format=raw,file=$(DISK_IMG),if=ide \
+		-drive id=sata0,format=raw,file=$(SATA_IMG),if=none \
+		-device ich9-ahci,id=ahci \
+		-device ide-hd,drive=sata0,bus=ahci.0,model="Samsung SSD 850",serial=S21NX0AG123456 \
+		-serial stdio -no-reboot -cpu max
+
+run-ssd: $(DISK_IMG) $(SATA_IMG)
+	$(QEMU) -m 512M \
+		-drive id=boot,format=raw,file=$(DISK_IMG),if=ide \
+		-drive id=sata0,format=raw,file=$(SATA_IMG),if=none,discard=unmap \
+		-device ich9-ahci,id=ahci \
+		-device ide-hd,drive=sata0,bus=ahci.0,model="KINGSTON SV300",serial=50026B7261234567,rotation_rate=1 \
+		-serial stdio -no-reboot -cpu max
+
+run-hdd: $(DISK_IMG) $(SATA_IMG)
+	$(QEMU) -m 512M \
+		-drive id=boot,format=raw,file=$(DISK_IMG),if=ide \
+		-drive id=sata0,format=raw,file=$(SATA_IMG),if=none \
+		-device ich9-ahci,id=ahci \
+		-device ide-hd,drive=sata0,bus=ahci.0,model="WDC WD10EZEX",serial=WD-WCC6Y1234567,rotation_rate=7200 \
+		-serial stdio -no-reboot -cpu max
+
+run-multi: $(DISK_IMG) $(SATA_IMG) $(SATA1_IMG) $(CDROM_ISO)
+	$(QEMU) -m 512M \
+		-drive id=boot,format=raw,file=$(DISK_IMG),if=ide \
+		-drive id=sata0,format=raw,file=$(SATA_IMG),if=none \
+		-drive id=sata1,format=raw,file=$(SATA1_IMG),if=none \
+		-drive id=cdrom0,format=raw,file=$(CDROM_ISO),if=none,media=cdrom \
+		-device ich9-ahci,id=ahci \
+		-device ide-hd,drive=sata0,bus=ahci.0,model="WD Blue 1TB",serial=WD001 \
+		-device ide-hd,drive=sata1,bus=ahci.1,model="Seagate 2TB",serial=ST002 \
+		-device ide-cd,drive=cdrom0,bus=ahci.2 \
 		-serial stdio -no-reboot -cpu max
 
 debug: $(DISK_IMG) $(SATA_IMG)
@@ -98,4 +167,4 @@ debug: $(DISK_IMG) $(SATA_IMG)
 clean:
 	rm -rf $(BUILD_DIR) $(IMAGE_DIR)
 
-.PHONY: all clean run debug
+.PHONY: all clean run debug run-wd run-seagate run-samsung run-ssd run-hdd run-multi
